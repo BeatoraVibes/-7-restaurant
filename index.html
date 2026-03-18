@@ -15,6 +15,8 @@ button{background:#ffd700;border:none;padding:6px 10px;border-radius:6px;font-we
 
 /* CART OVERLAY */ #cart{ position:fixed; right:-100%; top:0; width:85%; height:100%; background:#181818; padding:20px; transition:.3s; overflow:auto; z-index:1000; } #cart.active{right:0}
 
+/* ensure closed by default */ #cart:not(.active){right:-100%}
+
 .cart-header{display:flex;justify-content:space-between;align-items:center} .close-btn{background:#ff4d4d;color:#fff;padding:5px 10px}
 
 .cart-item{display:flex;justify-content:space-between;margin:8px 0} .cart-actions{margin-top:15px;display:flex;gap:10px}
