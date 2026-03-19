@@ -28,6 +28,16 @@ header{display:flex;justify-content:space-between;align-items:center;padding:15p
 <button onclick="toggleCart()">Cart 🛒</button>
 </header>
 
+<div style="padding:10px">
+<button onclick="showOrders()" style="background:#ffd700;border:none;padding:8px 12px;border-radius:6px">My Orders</button>
+</div>
+
+<div id="ordersPage" style="display:none;padding:15px;background:rgba(0,0,0,0.7)">
+<h3>My Orders</h3>
+<div id="ordersList"></div>
+<button onclick="closeOrders()">Close</button>
+</div>
+
 <div class="menu" id="menu"></div>
 
 <div class="cart" id="cartBox">
@@ -45,7 +55,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:15p
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
-const OWNER_WHATSAPP="919021268038";
+const OWNER_WHATSAPP="91XXXXXXXXXX";
 
 const firebaseConfig={
  apiKey:"AIzaSyBZa8qNux45ko8RDq-b6bmji-rBuugOTkM",
@@ -150,12 +160,42 @@ function generateMsg(paymentId){
  return msg;
 }
 
+function showOrders(){
+ if(!user){alert("Login first");return;}
+ document.getElementById("ordersPage").style.display="block";
+
+ db.collection("orders")
+ .where("user","==",user.email)
+ .orderBy("time","desc")
+ .get()
+ .then(snapshot=>{
+  let html="";
+  snapshot.forEach(doc=>{
+    const data=doc.data();
+    html+="<div style='margin-bottom:10px;border-bottom:1px solid #555;padding:5px'>"+
+    "<b>Total:</b> ₹"+data.total+"<br><b>Items:</b><br>";
+
+    for(let i in data.cart){
+      html+= i + " x" + data.cart[i].qty + "<br>";
+    }
+
+    html+= "<small>" + new Date(data.time.seconds*1000).toLocaleString() + "</small></div>";
+  });
+
+  document.getElementById("ordersList").innerHTML= html || "No orders yet";
+ });
+}
+
+function closeOrders(){
+ document.getElementById("ordersPage").style.display="none";
+}
+
 function payNow(){
  if(!user){alert("Login first");return;}
  let total=0;for(let i in cart) total+=cart[i].qty*cart[i].price;
 
  const options={
-  key:"rzp_test_SSfbjt7z6btSQf",
+  key:"YOUR_RAZORPAY_KEY",
   amount:total*100,
   currency:"INR",
   name:"#7 Restaurant",
