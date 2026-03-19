@@ -6,9 +6,10 @@
 <title>#7 Restaurant</title>
 
 <style>
-body{margin:0;font-family:sans-serif;color:#fff;background:url('https://images.unsplash.com/photo-1541592106381-b31e9677c0e5') center/cover fixed}
-header{display:flex;justify-content:space-between;align-items:center;padding:15px;background:rgba(0,0,0,0.7)}
-.menu{padding:15px;background:rgba(0,0,0,0.6)}
+body{margin:0;font-family:sans-serif;color:#fff;background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url('https://images.unsplash.com/photo-1523413651479-597eb2da0ad6') center/cover fixed}
+header{display:flex;justify-content:space-between;align-items:center;padding:15px}
+button{cursor:pointer}
+.menu{padding:15px}
 .section{margin-bottom:25px}
 .section h2{color:#ffd700}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -16,7 +17,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:15p
 .qty{display:flex;gap:5px}
 .qty button{background:#ffd700;border:none;padding:5px 10px;border-radius:5px}
 .cart{position:fixed;right:0;top:0;width:300px;height:100%;background:#111;padding:15px;display:none;overflow:auto}
-@media(max-width:768px){.grid{grid-template-columns:1fr}}
+#ordersPage{display:none;padding:15px;background:#111;position:fixed;top:0;left:0;width:100%;height:100%;overflow:auto}
 </style>
 </head>
 
@@ -32,21 +33,21 @@ header{display:flex;justify-content:space-between;align-items:center;padding:15p
 <button onclick="showOrders()" style="background:#ffd700;border:none;padding:8px 12px;border-radius:6px">My Orders</button>
 </div>
 
-<div id="ordersPage" style="display:none;padding:15px;background:rgba(0,0,0,0.7)">
-<h3>My Orders</h3>
-<div id="ordersList"></div>
-<button onclick="closeOrders()">Close</button>
-</div>
-
 <div class="menu" id="menu"></div>
 
 <div class="cart" id="cartBox">
 <h3>Your Cart</h3>
 <div id="cartItems"></div>
 <p id="total">Total: ₹0</p>
-<button onclick="payNow()">Pay with Razorpay</button>
+<button onclick="payNow()">Pay</button>
 <button onclick="clearCart()">Cancel</button>
 <button onclick="toggleCart()">Close</button>
+</div>
+
+<div id="ordersPage">
+<h2>My Orders</h2>
+<div id="ordersList"></div>
+<button onclick="closeOrders()">Close</button>
 </div>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -60,7 +61,7 @@ const OWNER_WHATSAPP="919021268038";
 const firebaseConfig={
  apiKey:"AIzaSyBZa8qNux45ko8RDq-b6bmji-rBuugOTkM",
  authDomain:"sample-restaurant-websit-f6985.firebaseapp.com",
- projectId:"sample-restaurant-websit-f6985",
+ projectId:"sample-restaurant-websit-f6985"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -68,14 +69,12 @@ const auth=firebase.auth();
 const db=firebase.firestore();
 
 let user=null;
+
 auth.onAuthStateChanged(u=>{
  user=u;
  const box=document.getElementById("authBox");
- if(u){
-  box.innerHTML=`${u.displayName} <button onclick="logout()">Logout</button>`;
- }else{
-  box.innerHTML=`<button onclick="login()">Login</button>`;
- }
+ if(u){box.innerHTML=`${u.displayName} <button onclick="logout()">Logout</button>`;}
+ else{box.innerHTML=`<button onclick="login()">Login</button>`;}
 });
 
 function login(){
@@ -87,60 +86,37 @@ function logout(){auth.signOut();}
 
 auth.getRedirectResult();
 
-const menuData={
- "Breakfast":[
-  {n:"Bread Butter",p:20},{n:"Toast Bread Butter",p:30},{n:"Bun Maska",p:25},{n:"Cheese Bread Butter",p:45}
- ],
- "Dessert":[
-  {n:"Chocolate Brownie",p:99},{n:"Sizzling Brownie",p:139},{n:"Vanilla Ice Cream",p:30}
- ],
- "Tea":[
-  {n:"Elaichi Chai",p:12},{n:"Lemon Tea",p:20},{n:"Black Tea",p:15}
- ],
- "Coffee":[
-  {n:"Hot Coffee",p:20},{n:"Black Coffee",p:15},{n:"Hot Chocolate Coffee",p:45},{n:"Ukala",p:30}
- ],
- "Pasta":[
-  {n:"Red Sauce Pasta",p:89},{n:"White Sauce Pasta",p:99}
- ],
- "Fries":[
-  {n:"Salty Fries",p:60},{n:"Peri Peri Fries",p:75}
- ],
- "Sandwich":[
-  {n:"Veg Sandwich",p:50},{n:"Veg Cheese Sandwich",p:60},{n:"Masala Sandwich",p:70}
- ],
- "Momos":[
-  {n:"Veg Momos",p:70},{n:"Chicken Momos",p:80}
- ],
- "Milkshake":[
-  {n:"Vanilla Shake",p:60},{n:"Mango Shake",p:75},{n:"Oreo Shake",p:95}
- ]
-};
+const menuData={"Breakfast":[{n:"Bread Butter",p:20},{n:"Toast",p:30},{n:"Bun Maska",p:25}],"Tea":[{n:"Chai",p:12},{n:"Black Tea",p:15}],"Snacks":[{n:"Fries",p:60},{n:"Sandwich",p:50}]};
 
 let cart={};
 
 function render(){
- const m=document.getElementById("menu");
- m.innerHTML="";
+ let html="";
  for(let cat in menuData){
-  m.innerHTML+=`<div class='section'><h2>${cat}</h2><div class='grid' id='${cat}'></div></div>`;
-  const g=document.getElementById(cat);
-  menuData[cat].forEach(item=>{
-   g.innerHTML+=`<div class='card'>${item.n} ₹${item.p}<div class='qty'><button onclick="change('${item.n}',${item.p},-1)">-</button><span id='q-${item.n}'>0</span><button onclick="change('${item.n}',${item.p},1)">+</button></div></div>`;
+  html+=`<div class='section'><h2>${cat}</h2><div class='grid'>`;
+  menuData[cat].forEach(i=>{
+   html+=`<div class='card'>${i.n} ₹${i.p}
+   <div class='qty'>
+   <button onclick="change('${i.n}',${i.p},-1)">-</button>
+   <span id='q-${i.n}'>0</span>
+   <button onclick="change('${i.n}',${i.p},1)">+</button>
+   </div></div>`;
   });
+  html+="</div></div>";
  }
+ document.getElementById("menu").innerHTML=html;
 }
 
-function change(name,price,val){
- if(!cart[name]) cart[name]={qty:0,price};
- cart[name].qty+=val;
- if(cart[name].qty<=0) delete cart[name];
- document.getElementById(`q-${name}`).innerText=cart[name]?cart[name].qty:0;
+function change(n,p,v){
+ if(!cart[n]) cart[n]={qty:0,price:p};
+ cart[n].qty+=v;
+ if(cart[n].qty<=0) delete cart[n];
+ document.getElementById(`q-${n}`).innerText=cart[n]?cart[n].qty:0;
  updateCart();
 }
 
 function updateCart(){
- let total=0;let html="";
+ let total=0,html="";
  for(let i in cart){total+=cart[i].qty*cart[i].price;html+=`${i} x${cart[i].qty}<br>`;}
  document.getElementById("cartItems").innerHTML=html;
  document.getElementById("total").innerText="Total: ₹"+total;
@@ -153,41 +129,10 @@ function toggleCart(){
 
 function clearCart(){cart={};render();updateCart();}
 
-function generateMsg(paymentId){
- let msg=`Order%0A`;
+function generateMsg(pid){
+ let msg="Order%0A";
  for(let i in cart){msg+=`${i} x${cart[i].qty}%0A`;}
- msg+=`Total: ₹${Object.values(cart).reduce((t,i)=>t+i.qty*i.price,0)}%0APaymentID:${paymentId}`;
- return msg;
-}
-
-function showOrders(){
- if(!user){alert("Login first");return;}
- document.getElementById("ordersPage").style.display="block";
-
- db.collection("orders")
- .where("user","==",user.email)
- .orderBy("time","desc")
- .get()
- .then(snapshot=>{
-  let html="";
-  snapshot.forEach(doc=>{
-    const data=doc.data();
-    html+="<div style='margin-bottom:10px;border-bottom:1px solid #555;padding:5px'>"+
-    "<b>Total:</b> ₹"+data.total+"<br><b>Items:</b><br>";
-
-    for(let i in data.cart){
-      html+= i + " x" + data.cart[i].qty + "<br>";
-    }
-
-    html+= "<small>" + new Date(data.time.seconds*1000).toLocaleString() + "</small></div>";
-  });
-
-  document.getElementById("ordersList").innerHTML= html || "No orders yet";
- });
-}
-
-function closeOrders(){
- document.getElementById("ordersPage").style.display="none";
+ return msg+`Total: ₹${Object.values(cart).reduce((t,i)=>t+i.qty*i.price,0)}%0APayment:${pid}`;
 }
 
 function payNow(){
@@ -200,14 +145,36 @@ function payNow(){
   currency:"INR",
   name:"#7 Restaurant",
   handler:function(res){
-   db.collection("orders").add({user:user.email,cart,total,time:new Date(),paymentId:res.razorpay_payment_id});
-   setTimeout(()=>{
-    window.location.href=`https://wa.me/${OWNER_WHATSAPP}?text=${generateMsg(res.razorpay_payment_id)}`;
-   },500);
+   const order={user:user.email,cart:JSON.parse(JSON.stringify(cart)),total,time:new Date(),paymentId:res.razorpay_payment_id};
+
+   db.collection("orders").add(order)
+   .then(()=>{
+     window.location.href=`https://wa.me/${OWNER_WHATSAPP}?text=${generateMsg(res.razorpay_payment_id)}`;
+   })
+   .catch(e=>{alert("Error saving order");console.log(e);});
   }
  };
  new Razorpay(options).open();
 }
+
+function showOrders(){
+ if(!user){alert("Login first");return;}
+ document.getElementById("ordersPage").style.display="block";
+
+ db.collection("orders").where("user","==",user.email).get()
+ .then(snap=>{
+  let html="";
+  snap.forEach(doc=>{
+    const d=doc.data();
+    html+=`<div><b>₹${d.total}</b><br>`;
+    for(let i in d.cart){html+=`${i} x${d.cart[i].qty}<br>`;}
+    html+="<hr></div>";
+  });
+  document.getElementById("ordersList").innerHTML=html||"No orders";
+ });
+}
+
+function closeOrders(){document.getElementById("ordersPage").style.display="none";}
 
 render();
 </script>
